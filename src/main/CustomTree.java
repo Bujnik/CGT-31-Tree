@@ -8,6 +8,13 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 public class CustomTree extends AbstractList<String> implements Cloneable, Serializable {
+    Entry<String> root;
+    int size = 0;
+
+    public CustomTree() {
+        this.root = new Entry<>("0");
+    }
+
     @Override
     public String set(int index, String element) {
         throw new UnsupportedOperationException();
@@ -42,45 +49,64 @@ public class CustomTree extends AbstractList<String> implements Cloneable, Seria
     public String get(int index) {
         throw new UnsupportedOperationException();
     }
-
+    // Methods above are not supported
     @Override
     public int size() {
-        return 0;
+        return size;
     }
 
     @Override
-    public void replaceAll(UnaryOperator<String> operator) {
-        super.replaceAll(operator);
+    public boolean add(String s) {
+        //We create queue of our entries, starting with root
+        Queue<Entry<String>> queue = new LinkedList<>();
+        queue.add(root);
+        //New node is created and its name is the passed string
+        Entry<String> newNode = new Entry<>(s);
+        while (!queue.isEmpty()){
+            //We take first element from the queue and check if we can add it to either side of the tree,
+            //if not, we add children and move on
+            Entry<String> node = queue.poll();
+            if (node.isAvailableToAddChildren()){
+                if(node.availableToAddLeftChildren){
+                    node.leftChild = newNode;
+                    node.availableToAddLeftChildren = false;
+                }
+                else{
+                    node.rightChild = newNode;
+                    node.availableToAddRightChildren = false;
+                }
+                newNode.parent = node;
+                size++;
+                break;
+            }
+            else {
+                queue.add(node.leftChild);
+                queue.add(node.rightChild);
+            }
+        }
+        return true;
     }
 
-    @Override
-    public void sort(Comparator<? super String> c) {
-        super.sort(c);
-    }
+    public String getParent(String s){
+        //We add to the queue our root
+        Queue<Entry<String>> queue = new LinkedList<>();
+        queue.add(root);
+        while (!queue.isEmpty()){
 
-    @Override
-    public Spliterator<String> spliterator() {
-        return super.spliterator();
-    }
-
-    @Override
-    public boolean removeIf(Predicate<? super String> filter) {
-        return super.removeIf(filter);
-    }
-
-    @Override
-    public Stream<String> stream() {
-        return super.stream();
-    }
-
-    @Override
-    public Stream<String> parallelStream() {
-        return super.parallelStream();
-    }
-
-    @Override
-    public void forEach(Consumer<? super String> action) {
-        super.forEach(action);
+            //We check if current node elementName equals our string
+            Entry<String> node = queue.poll();
+            if (node.equals(root)) {
+                //We have to check if passed string points to the root
+                if (s.equals(node.elementName)) return null;
+            }
+            else if(node.elementName.equals(s)){
+                return node.parent.elementName;
+            }
+            //If we have children, we add them to the queue
+            if (!node.availableToAddRightChildren) queue.add(node.rightChild);
+            if (!node.availableToAddLeftChildren) queue.add(node.leftChild);
+        }
+        return null;
     }
 
     static class Entry<T> implements Serializable{
@@ -93,8 +119,8 @@ public class CustomTree extends AbstractList<String> implements Cloneable, Seria
 
         public Entry(String elementName) {
             this.elementName = elementName;
-            availableToAddLeftChildren = true;
-            availableToAddRightChildren = true;
+            this.availableToAddLeftChildren = true;
+            this.availableToAddRightChildren = true;
         }
 
         public boolean isAvailableToAddChildren(){
